@@ -1,6 +1,6 @@
 <?php
 
-namespace Fatchip\AddressValidation\extend\Application\Controller\Admin;
+namespace fc\fcaddressvalidation\extend\Application\Controller\Admin;
 
 use OxidEsales\Eshop\Core\Registry;
 
