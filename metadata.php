@@ -21,10 +21,10 @@ $aModule = [
     'version'     => '1.0.0',
     'author'      => 'FC-Sebastian',
     'extend'      => [
-        \OxidEsales\Eshop\Application\Controller\Admin\ModuleConfiguration::class => \Fatchip\AddressValidation\extend\Application\Controller\Admin\ModuleConfiguration::class
+        OxidEsales\Eshop\Application\Controller\Admin\ModuleConfiguration::class => Fatchip\AddressValidation\extend\Application\Controller\Admin\ModuleConfiguration::class
     ],
     'controllers' => [
-        'bullshittest' => \Fatchip\AddressValidation\Application\admin\Testbullshit::class
+        'bullshittest' => Fatchip\AddressValidation\Application\admin\Testbullshit::class
     ],
     'templates'   => [],
     'events'      => [],
