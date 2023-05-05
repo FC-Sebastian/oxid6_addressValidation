@@ -20,7 +20,9 @@ $aModule = [
     ],
     'version'     => '1.0.0',
     'author'      => 'FC-Sebastian',
-    'extend'      => [],
+    'extend'      => [
+        \OxidEsales\Eshop\Application\Controller\Admin\ModuleConfiguration::class => \Fatchip\AddressValidation\extend\Application\Controller\Admin\ModuleConfiguration::class
+    ],
     'controllers' => [],
     'templates'   => [],
     'events'      => [],
