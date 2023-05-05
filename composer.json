@@ -10,7 +10,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Fatchip\\AdressValidation\\": "./"
+      "Fatchip\\AdressValidation\\": "../../../../source/modules/fc/fcaddressvalidation"
     }
   }
 }
