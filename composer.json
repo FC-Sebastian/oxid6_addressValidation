@@ -1,0 +1,16 @@
+{
+  "name": "fc/fcaddressvalidation",
+  "description": "Module for address validation during checkout for Oxid 6",
+  "license": "proprietary",
+  "type": "oxideshop-module",
+  "extra": {
+    "oxideshop": {
+      "target-directory": "fc/fcaddressvalidation"
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "Fatchip\\AdressValidation\\": "./"
+    }
+  }
+}
