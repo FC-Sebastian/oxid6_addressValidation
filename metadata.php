@@ -21,7 +21,7 @@ $aModule = [
     'version'     => '1.0.0',
     'author'      => 'FC-Sebastian',
     'extend'      => [
-        \OxidEsales\Eshop\Application\Controller\Admin\ModuleConfiguration::class => \Fatchip\AddressValidation\extend\ModuleConfiguration::class
+        \OxidEsales\Eshop\Application\Controller\Admin\ModuleConfiguration::class => \Fatchip\AddressValidation\extend\Application\Controller\Admin\ModuleConfiguration::class,
     ],
     'blocks'      => [
         [
@@ -29,5 +29,8 @@ $aModule = [
             'block'    => 'admin_module_config_form',
             'file'     => 'admin_module_config_form.tpl'
         ]
+    ],
+    'events'      => [
+        'onActivate' => 'Fatchip\AddressValidation\Core\Events::onActivate'
     ]
 ];
