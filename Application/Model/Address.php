@@ -34,12 +34,19 @@ class Address extends MultiLanguageModel
         $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
 
         $aIds = [];
-        $data = $db->select("oxid")->from('fcaddresses')->execute();
+        $data = $db->select("OXID")->from('fcaddresses')->execute();
 
         while ($aRow = $data->fetchAssociative()) {
             $aIds[] = $aRow['OXID'];
         }
 
         return $aIds;
+    }
+
+    public function getAddressCount()
+    {
+        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
+        $db->select('COUNT(OXID) FROM fcaddresses');
+        return $db->execute()->fetchAssociative()['COUNT(OXID)'];
     }
 }

@@ -19,7 +19,9 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
 
     protected $_blHeadersInvalid = false;
 
-    //3:41
+    protected $_blComplete = false;
+
+    //2:43
 
     /**
      * @throws \Exception
@@ -37,24 +39,13 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
                 $afirstrow = fgetcsv($file,null, $aFormData["csv_separator"], $aFormData["csv_enclosure"], $aFormData["csv_escape"]);
 
                 if ($this->fcValidateHeaders($afirstrow) === true) {
-                    $oAddress = oxNew(Address::class);
-                    $aDeleteIds = $oAddress->getIds();
                     $aParamKeys = $this->fcGetParamKeys($afirstrow);
-                    $aSaveParams = [];
+
                     $iStart = time();
-
-                    while($aRow = fgetcsv($file,null, $aFormData["csv_separator"], $aFormData["csv_enclosure"], $aFormData["csv_escape"])) {
-                        $aParams = $this->fcGetParams($aParamKeys, $aRow);
-                        $aAddressId = $oAddress->loadIdByParams($aParams);
-
-                        if (empty($aAddressId)) {
-                            $aSaveParams[] = $aParams;
-                        } else {
-                            unset($aDeleteIds[array_search($aAddressId['OXID'],$aDeleteIds)]);
-                        }
-                    }
-                    $this->fcSaveAndDelete($aDeleteIds, $aSaveParams);
+                    $this->fcSaveAndDelete($aParamKeys, $file, $aFormData);
                     Registry::getLogger()->error('total time: '.date('i:s', time() - $iStart));
+
+                    fclose($file);
                 } else {
                     $this->_blHeadersInvalid = true;
                 }
@@ -73,7 +64,29 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
         return $aReturn;
     }
 
-    protected function fcSaveAndDelete($aDeleteIds, $aSaveParams)
+    protected function fcSaveAndDelete($aParamKeys, $file, $aFormData)
+    {
+        $oAddress = oxNew(Address::class);
+        $aDeleteIds = $oAddress->getIds();
+        $aSaveParams = [];
+
+        while($aRow = fgetcsv($file,null, $aFormData["csv_separator"], $aFormData["csv_enclosure"], $aFormData["csv_escape"])) {
+            $aParams = $this->fcGetParams($aParamKeys, $aRow);
+            $aAddressId = $oAddress->loadIdByParams($aParams);
+
+            if (empty($aAddressId)) {
+                $aSaveParams[] = $aParams;
+            } else {
+                unset($aDeleteIds[array_search($aAddressId['OXID'],$aDeleteIds)]);
+            }
+        }
+        $this->fcDeleteAddresses($aDeleteIds);
+        $this->fcSaveAddresses($aSaveParams);
+
+        $this->_blComplete = true;
+    }
+
+    protected function fcDeleteAddresses($aDeleteIds)
     {
         if (!empty($aDeleteIds)) {
             $oAddress = oxNew(Address::class);
@@ -81,6 +94,10 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
                 $oAddress->delete($deleteId);
             }
         }
+    }
+
+    protected function fcSaveAddresses($aSaveParams)
+    {
         if (!empty($aSaveParams)) {
             foreach ($aSaveParams as $aParams) {
                 $oAddress = oxNew(Address::class);
@@ -104,6 +121,12 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
         return array_diff($aHeaders, $this->_aDefaultHeaders) === [];
     }
 
+    public function fcGetAddressCount()
+    {
+        $oAddress = oxNew(Address::class);
+        return $oAddress->getAddressCount();
+    }
+
     public function fcGetSeparator()
     {
         return $this->_sSeparator;
@@ -117,5 +140,20 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
     public function fcGetEscape()
     {
         return $this->_sEscape;
+    }
+
+    public function fcGetTypeInvalid()
+    {
+        return $this->_blFileInvalid;
+    }
+
+    public function fcGetHeadersInvalid()
+    {
+        return $this->_blHeadersInvalid;
+    }
+
+    public function fcGetComplete()
+    {
+        return $this->_blComplete;
     }
 }
