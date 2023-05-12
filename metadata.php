@@ -28,9 +28,17 @@ $aModule = [
             'template' => 'module_config.tpl',
             'block'    => 'admin_module_config_form',
             'file'     => 'admin_module_config_form.tpl'
+        ],
+        [
+            'template' => 'form/fieldset/user_billing.tpl',
+            'block'    => 'form_user_billing_country',
+            'file'     => 'form_user_billing_country.tpl'
         ]
     ],
     'events'      => [
         'onActivate' => 'Fatchip\AddressValidation\Core\Events::onActivate'
+    ],
+    'controllers' => [
+        'fcAddressAjax' => \Fatchip\AddressValidation\Application\Controller\AddressAjaxController::class
     ]
 ];

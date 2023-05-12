@@ -21,14 +21,6 @@ class Address extends MultiLanguageModel
         $this->init("fcaddresses");
     }
 
-    public function loadIdByParams($aParams)
-    {
-        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
-        $db->select("OXID FROM fcaddresses WHERE CITY = '{$aParams['fcaddresses__city']}' AND PLZ = '{$aParams['fcaddresses__plz']}' AND COUNTRY = '{$aParams['fcaddresses__country']}' AND COUNTRYSHORTCUT = '{$aParams['fcaddresses__countryshortcut']}' LIMIT 1");
-
-        return $db->execute()->fetchAssociative();
-    }
-
     public function getIds()
     {
         $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
@@ -48,5 +40,26 @@ class Address extends MultiLanguageModel
         $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
         $db->select('COUNT(OXID) FROM fcaddresses');
         return $db->execute()->fetchAssociative()['COUNT(OXID)'];
+    }
+
+    public function loadByColumnValues($aParams) {
+        $sWhere = 'WHERE';
+        foreach ($aParams as $sColumn => $sValue) {
+            if ($sColumn !== array_key_first($aParams)) {
+                $sWhere .= ' AND';
+            }
+            $sWhere .= " {$sColumn} = '{$sValue}'";
+        }
+
+        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
+        $db->select("* FROM fcaddresses {$sWhere} LIMIT 1");
+
+        $data = $db->execute();
+
+        if ($data->rowCount() > 0) {
+            $this->assign($data->fetchAssociative());
+            return true;
+        }
+        return false;
     }
 }
