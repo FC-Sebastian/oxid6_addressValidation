@@ -59,7 +59,7 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
     {
         $aReturn = [];
         foreach ($aFirstRow as $column) {
-            $aReturn[] = str_replace("-","",strtoupper($column));
+            $aReturn[] = "fcaddresses__".str_replace("-","",strtolower($column));
         }
         return $aReturn;
     }
@@ -72,12 +72,12 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
 
         while($aRow = fgetcsv($file,null, $aFormData["csv_separator"], $aFormData["csv_enclosure"], $aFormData["csv_escape"])) {
             $aParams = $this->fcGetParams($aParamKeys, $aRow);
-            $oAddress->loadByColumnValues($aParams);
+            $aAddressId = $oAddress->loadIdByParams($aParams);
 
-            if ($oAddress->loadByColumnValues($aParams) === false) {
+            if (empty($aAddressId)) {
                 $aSaveParams[] = $aParams;
             } else {
-                unset($aDeleteIds[array_search($oAddress->getId(),$aDeleteIds)]);
+                unset($aDeleteIds[array_search($aAddressId['OXID'],$aDeleteIds)]);
             }
         }
         $this->fcDeleteAddresses($aDeleteIds);
