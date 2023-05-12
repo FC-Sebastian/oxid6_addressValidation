@@ -21,6 +21,14 @@ class Address extends MultiLanguageModel
         $this->init("fcaddresses");
     }
 
+    public function loadIdByParams($aParams)
+    {
+        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
+        $db->select("OXID FROM fcaddresses WHERE CITY = '{$aParams['fcaddresses__city']}' AND PLZ = '{$aParams['fcaddresses__plz']}' AND COUNTRY = '{$aParams['fcaddresses__country']}' AND COUNTRYSHORTCUT = '{$aParams['fcaddresses__countryshortcut']}' LIMIT 1");
+
+        return $db->execute()->fetchAssociative();
+    }
+
     public function getIds()
     {
         $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
