@@ -23,7 +23,7 @@ class AddressAjaxController extends FrontendController
         if ($oAddress->loadByColumnValues(['CITY' => $sCity, 'PLZ' => $sZip, 'COUNTRY' => $sCountryTitle]) === true) {
             echo json_encode(['status' => 'valid']);
         } elseif ($oAddress->loadByColumnValues(['CITY' => $sCity, 'PLZ' => $sZip]) === true) {
-            echo json_encode(['status' => 'country found', 'country' => $oAddress->fcaddresses__country->value]);
+            echo json_encode(['status' => 'country found', 'country' => $this->getCountryIdByShortcut($oAddress->fcaddresses__countryshortcut->value)]);
         } elseif ($oAddress->loadByColumnValues(['PLZ' => $sZip]) === true) {
             echo json_encode(['status' => 'city found', 'city' => $oAddress->fcaddresses__city->value]);
         } else {
@@ -31,5 +31,11 @@ class AddressAjaxController extends FrontendController
         }
 
         exit();
+    }
+
+    protected function getCountryIdByShortcut($sCountryShortcut)
+    {
+        $oCountry = oxNew(Country::class);
+        return $oCountry->getIdByCode($sCountryShortcut);
     }
 }
