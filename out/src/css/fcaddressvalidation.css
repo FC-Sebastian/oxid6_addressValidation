@@ -1,4 +1,4 @@
-.fcavErrorBox {
+.fcErrorBox {
     border: 5px solid red;
     border-right: none;
     border-left: none;
@@ -8,6 +8,6 @@
     margin-top: 2px;
 }
 
-.fcavInvalid {
+.fcInvalid {
     border-color: red !important;
 }

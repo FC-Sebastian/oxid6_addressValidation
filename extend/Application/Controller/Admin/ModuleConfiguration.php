@@ -3,28 +3,81 @@
 namespace Fatchip\AddressValidation\extend\Application\Controller\Admin;
 
 use Fatchip\AddressValidation\Application\Model\Address;
+use Generator;
+use OxidEsales\Eshop\Core\Exception\DatabaseConnectionException;
+use OxidEsales\Eshop\Core\Exception\DatabaseErrorException;
 use OxidEsales\Eshop\Core\Registry;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 class ModuleConfiguration extends ModuleConfiguration_Parent
 {
-    protected $_sSeparator = ";";
+    /**
+     * Default csv separator
+     *
+     * @var string
+     */
+    protected $fc_sSeparator = ";";
 
-    protected $_sEnclosure = '"';
+    /**
+     * Default csv enclosure
+     *
+     * @var string
+     */
+    protected $fc_sEnclosure = '"';
 
-    protected $_sEscape = "\\";
+    /**
+     * Default csv escape
+     *
+     * @var string
+     */
+    protected $fc_sEscape = "\\";
 
-    protected $_aDefaultHeaders = ["PLZ", "City", "Country", "Country-Shortcut"];
+    /**
+     * Expected CSV headers
+     *
+     * @var string[]
+     */
+    protected $fc_aDefaultHeaders = ["PLZ", "City", "Country", "Country-Shortcut"];
 
-    protected $_aDbColumns = null;
+    /**
+     * Used to store array of db column names
+     *
+     * @var null
+     */
+    protected $fc_aDbColumns = null;
 
-    protected $_aAddressIds = null;
+    /**
+     * Flag to indicate file validity
+     *
+     * @var bool
+     */
+    protected $fc_blFileInvalid = false;
 
-    protected $_blFileInvalid = false;
+    /**
+     * Flag to indicate csv header validity
+     *
+     * @var bool
+     */
+    protected $fc_blHeadersInvalid = false;
 
-    protected $_blHeadersInvalid = false;
+    /**
+     * Flag to indicate success
+     *
+     * @var bool
+     */
+    protected $fc_blComplete = false;
 
-    protected $_blComplete = false;
-
+    /**
+     * Extends ModuleConfiguration save method
+     * validates and imports csv
+     *
+     * @return void
+     * @throws DatabaseConnectionException
+     * @throws DatabaseErrorException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
     public function save()
     {
         parent::save();
@@ -38,32 +91,36 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
             $this->fcSetSeparator($aFormData['csv_separator']);
 
             if ($aFile["type"] === "text/csv") {
-                $file = fopen($aFile["tmp_name"],"r");
-
-                $aFirstRow = fgetcsv($file,null, $this->fcGetSeparator(), $this->fcGetEnclosure(), $this->fcGetEscape());
+                $oCsvFile = fopen($aFile["tmp_name"],"r");
+                $aFirstRow = fgetcsv($oCsvFile,null, $this->fcGetSeparator(), $this->fcGetEnclosure(), $this->fcGetEscape());
 
                 if ($this->fcValidateHeaders($aFirstRow) === true) {
-                    $this->_aDbColumns = $this->fcGetParamKeys($aFirstRow);
+                    $this->fc_aDbColumns = $this->fcGetParamKeys($aFirstRow);
 
-                    $this->fcSaveAndDelete($file);
+                    $this->fcSaveAndDelete($oCsvFile);
 
-                    fclose($file);
+                    fclose($oCsvFile);
                     unlink($aFile["tmp_name"]);
                 } else {
-                    $this->_blHeadersInvalid = true;
+                    $this->fc_blHeadersInvalid = true;
                 }
             } else {
-                $this->_blFileInvalid = true;
+                $this->fc_blFileInvalid = true;
             }
         }
     }
 
-    protected function  fcGetAssocCsvRow($file)
+    /**
+     * Generates associative arrays from CSV rows and array of db column headers
+     *
+     * @param object $oCsvFile
+     * @return Generator
+     */
+    protected function  fcGetAssocCsvRow($oCsvFile)
     {
-
-        while ($aRow = fgetcsv($file,null, $this->fcGetSeparator(), $this->fcGetEnclosure(), $this->fcGetEscape())) {
+        while ($aRow = fgetcsv($oCsvFile,null, $this->fcGetSeparator(), $this->fcGetEnclosure(), $this->fcGetEscape())) {
             foreach ($aRow as $key => $value) {
-                $aRow[$this->_aDbColumns[$key]] = utf8_encode($value);
+                $aRow[$this->fc_aDbColumns[$key]] = utf8_encode($value);
                 unset($aRow[$key]);
             }
             $aRow['OXID'] = md5($aRow['PLZ'].$aRow['CITY'].$aRow['COUNTRYSHORTCUT']);
@@ -72,89 +129,168 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
         }
     }
 
+    /**
+     * Uses csv headers to build and return array of db headers
+     *
+     * @param array $aFirstRow
+     * @return array
+     */
     protected function fcGetParamKeys($aFirstRow)
     {
         $aReturn = [];
-        foreach ($aFirstRow as $column) {
-            $aReturn[] = str_replace("-","",strtoupper($column));
+        foreach ($aFirstRow as $sColumn) {
+            $aReturn[] = str_replace("-","",strtoupper($sColumn));
         }
         return $aReturn;
     }
 
-    protected function fcSaveAndDelete($file)
+    /**
+     * Loops through fcGetAssocCsvRow generator to check whether a row is present in db or needs to be inserted
+     * Deletes and Inserts Addresses afterwards
+     *
+     * @param $oCsvFile
+     * @return void
+     * @throws DatabaseConnectionException
+     * @throws DatabaseErrorException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    protected function fcSaveAndDelete($oCsvFile)
     {
         $oAddress = oxNew(Address::class);
-        $aAddressIds = $oAddress->getIds();
+        $aAddressIds = $oAddress->fcGetIds();
 
-        foreach($this->fcGetAssocCsvRow($file) as $aRow) {
+        foreach($this->fcGetAssocCsvRow($oCsvFile) as $aRow) {
             $sAddressIdKey = array_search($aRow['OXID'], $aAddressIds);
 
             if ($sAddressIdKey === false) {
-                $oAddress->setInsertQueryValues($aRow);
+                $oAddress->fcSetInsertQueryValues($aRow);
             } else {
                 unset($aAddressIds[$sAddressIdKey]);
             }
         }
 
-        $oAddress->executeCsvInsertQuery();
-        $oAddress->deleteBulk($aAddressIds);
+        $oAddress->fcExecuteCsvInsertQuery();
+        $oAddress->fcDeleteBulk($aAddressIds);
 
-        $this->_blComplete = true;
+        $this->fc_blComplete = true;
     }
 
+    /**
+     * Validates given array of csv against expected csv headers
+     *
+     * @param $aHeaders
+     * @return bool
+     */
     protected function fcValidateHeaders($aHeaders)
     {
-        return array_diff($aHeaders, $this->_aDefaultHeaders) === [];
+        return array_diff($aHeaders, $this->fc_aDefaultHeaders) === [];
     }
 
+    /**
+     * Loads and returns number of addresses in db
+     *
+     * @return mixed
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
     public function fcGetAddressCount()
     {
         $oAddress = oxNew(Address::class);
-        return $oAddress->getAddressCount();
+        return $oAddress->fcGetAddressCount();
     }
 
+    /**
+     * Returns csv separator
+     *
+     * @return string
+     */
     public function fcGetSeparator()
     {
-        return $this->_sSeparator;
+        return $this->fc_sSeparator;
     }
 
+    /**
+     * Returns csv enclosure
+     *
+     * @return string
+     */
     public function fcGetEnclosure()
     {
-        return $this->_sEnclosure;
+        return $this->fc_sEnclosure;
     }
 
+    /**
+     * Returns csv escape
+     *
+     * @return string
+     */
     public function fcGetEscape()
     {
-        return $this->_sEscape;
+        return $this->fc_sEscape;
     }
 
+    /**
+     * Sets csv separator
+     *
+     * @param string $separator
+     * @return void
+     */
     public function fcSetSeparator($separator)
     {
-        $this->_sSeparator = $separator;
+        $this->fc_sSeparator = $separator;
     }
 
+    /**
+     * Sets csv enclosure
+     *
+     * @param $enclosure
+     * @return void
+     */
     public function fcSetEnclosure($enclosure)
     {
-        $this->_sEnclosure = $enclosure;
+        $this->fc_sEnclosure = $enclosure;
     }
 
+
+    /**
+     * Sets csv escape
+     *
+     * @param string $escape
+     * @return void
+     */
     public function fcSetEscape($escape)
     {
-        $this->_sEscape = $escape;
+        $this->fc_sEscape = $escape;
     }
 
+    /**
+     * Returns file validity as bool
+     *
+     * @return bool
+     */
     public function fcGetTypeInvalid()
     {
-        return $this->_blFileInvalid;
+        return $this->fc_blFileInvalid;
     }
 
+    /**
+     * Returns csv header validity as bool
+     *
+     * @return bool
+     */
     public function fcGetHeadersInvalid()
     {
-        return $this->_blHeadersInvalid;
+        return $this->fc_blHeadersInvalid;
     }
 
+    /**
+     * Returns csv Import success as bool
+     *
+     * @return bool
+     */
     public function fcGetComplete()
     {
-        return $this->_blComplete;
+        return $this->fc_blComplete;
     }
 }

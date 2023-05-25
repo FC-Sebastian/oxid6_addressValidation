@@ -1,125 +1,184 @@
-let fcavForm;
+let fcAddressForm;
 
 $(document).ready(function () {
-    fcavForm = $(document.getElementById('fcBillingHidden').form);
-    fcavForm.on('submit', async function(ev) {
+    fcAddressForm = $(document.getElementById('fcBillingHidden').form);
+    fcAddressForm.on('submit', async function(ev) {
         ev.preventDefault();
         if ( await fcAddressesAreValid() === true) {
-            fcavForm.unbind('submit').submit();
+            fcAddressForm.unbind('submit').submit();
         }
     });
 });
 
+/**
+ * Validates billing address and shipping address
+ * Returns true if both are valid
+ *
+ * @returns {Promise<boolean>}
+ */
 async function fcAddressesAreValid() {
-    let billingValid = await fcAddressValidation('#invadr_oxuser__oxcity', '#invadr_oxuser__oxzip', '#invCountrySelect');
-    let shippingValid = billingValid;
+    let blBillingValid = await fcAddressValidation('#invadr_oxuser__oxcity', '#invadr_oxuser__oxzip', '#invCountrySelect');
+    let blShippingValid = blBillingValid;
 
     if (fcIsShippingAddressVisible() === true) {
-        shippingValid = await fcAddressValidation('#deladr_oxaddress__oxcity', '#deladr_oxaddress__oxzip', '#delCountrySelect');
+        blShippingValid = await fcAddressValidation('#deladr_oxaddress__oxcity', '#deladr_oxaddress__oxzip', '#delCountrySelect');
     }
 
-    return billingValid === true && shippingValid === true;
+    return blBillingValid === true && blShippingValid === true;
 }
 
-async function fcAddressValidation(citySelector, zipSelector, countrySelector) {
-    let city = $(citySelector);
-    let zip = $(zipSelector);
-    let country = $(countrySelector);
+/**
+ * Uses given selectors to validate form data via ajax
+ * and displays error message if not valid
+ *
+ * @param sCitySelector {string}
+ * @param sZipSelector {string}
+ * @param sCountrySelector {string}
+ * @returns {Promise<boolean>}
+ */
+async function fcAddressValidation(sCitySelector, sZipSelector, sCountrySelector) {
+    let oCity = $(sCitySelector);
+    let oZip = $(sZipSelector);
+    let oCountry = $(sCountrySelector);
 
-    let response = await fcValidateAddress(city.val(),zip.val(),country.val());
+    let jResponse = await fcValidateAddress(oCity.val(),oZip.val(),oCountry.val());
 
-    if (response.status === 'valid') {
+    if (jResponse.status === 'valid') {
         return true;
     }
 
-    fcShowErrorMessage(response, zip, city, country)
+    fcShowErrorMessage(jResponse, oZip, oCity, oCountry)
     return false;
 }
 
-function fcShowErrorMessage(response, zip, city, country) {
-    let billingFrom = $('#addressForm');
-    let shippingForm =$('#shippingAddressForm');
 
-    if (billingFrom.has(zip).length !== 0) {
-        billingFrom.show();
-    } else if (shippingForm.has(zip).length !== 0) {
-        shippingForm.show();
+/**
+ * Expands the form containing the passed input fields if its hidden
+ * Uses response json to determine the type of error and display it
+ *
+ * @param jResponse {json}
+ * @param oZip {jQuery|HTMLElement}
+ * @param oCity {jQuery|HTMLElement}
+ * @param oCountry {jQuery|HTMLElement}
+ */
+function fcShowErrorMessage(jResponse, oZip, oCity, oCountry) {
+    let oBillingFrom = $('#addressForm');
+    let oShippingForm =$('#shippingAddressForm');
+
+    if (oBillingFrom.has(oZip).length !== 0) {
+        oBillingFrom.show();
+    } else if (oShippingForm.has(oZip).length !== 0) {
+        oShippingForm.show();
     }
 
-    if (response.status === 'country found') {
-        fcShowCountryError(country, response.country);
-    } else if (response.status === 'city found') {
-        fcShowCityError(zip, city, response.city)
+    if (jResponse.status === 'country found') {
+        fcShowCountryError(oCountry, jResponse.country);
+    } else if (jResponse.status === 'city found') {
+        fcShowCityError(oZip, oCity, jResponse.city)
     } else {
-        fcShowCityError(zip, city, false)
+        fcShowCityError(oZip, oCity, false)
     }
 }
 
+/**
+ * Returns true if billing address is not used as shipping address
+ *
+ * @returns {boolean}
+ */
 function fcIsShippingAddressVisible() {
     return $('#shippingAddress').css('display') !== 'none'
 }
 
-function fcShowCityError(zip,city, responseCity) {
-    let msg = fcavErrorMsgNoZip;
+/**
+ * Displays zip/city error, appends hint if the zip was found in db
+ *
+ * @param oZip {jQuery|HTMLElement}
+ * @param oCity {jQuery|HTMLElement}
+ * @param sResponseCity {string}
+ */
+function fcShowCityError(oZip, oCity, sResponseCity) {
+    let sMsg = fcErrorMsgNoZip;
 
-    if (responseCity !== false) {
-        msg += fcavErrorMsgZipHint.replace(/INSERTZIP/, zip.val());
-        msg = msg.replace(/INSERTCITY/, responseCity);
+    if (sResponseCity !== false) {
+        sMsg += fcErrorMsgZipHint.replace(/INSERTZIP/, oZip.val());
+        sMsg = sMsg.replace(/INSERTCITY/, sResponseCity);
     }
 
-    let errorDiv = fcGetErrorElement(msg);
-    zip.addClass('fcavInvalid');
-    city.addClass('fcavInvalid');
-    city.after(errorDiv);
+    let oErrorDiv = fcGetErrorElement(sMsg);
+    let oErrorContainer = $('<div class="col-lg-3"></div><div class="col-lg-9"></div>');
+    oErrorContainer.last().append(oErrorDiv);
 
-    fcavForm.on('submit', function () {
-        errorDiv.remove();
-        city.removeClass('fcavInvalid');
-        zip.removeClass('fcavInvalid');
+    oZip.addClass('fcInvalid');
+    oCity.addClass('fcInvalid');
+    oCity.parent().after(oErrorContainer);
+
+    fcAddressForm.on('submit', function () {
+        oErrorDiv.remove();
+        oCity.removeClass('fcInvalid');
+        oZip.removeClass('fcInvalid');
     });
 }
 
-function fcShowCountryError(country, countryId) {
-    let countryTitle;
-    country.children().each(function () {
-        let option = $(this);
-        if (option.val() === countryId) {
-            countryTitle = option.html();
-            option.prop('selected', true)
+/**
+ * Displays country error and sets country dropdown to country found in db
+ *
+ * @param oCountry {jQuery|HTMLElement}
+ * @param sCountryId {string}
+ */
+function fcShowCountryError(oCountry, sCountryId) {
+    let sCountryTitle;
+    oCountry.children().each(function () {
+        let oOption = $(this);
+        if (oOption.val() === sCountryId) {
+            sCountryTitle = oOption.html();
+            oOption.prop('selected', true)
         }
     });
 
-    let msg = fcavErrorMsgCountry.replace(/INSERTCOUNTRY/g, countryTitle);
+    let sMsg = fcErrorMsgCountry.replace(/INSERTCOUNTRY/g, sCountryTitle);
 
-    let errorDiv = fcGetErrorElement(msg);
-    country.addClass('fcavInvalid');
-    country.after(errorDiv);
+    let oErrorDiv = fcGetErrorElement(sMsg);
+    oCountry.addClass('fcInvalid');
+    oCountry.after(oErrorDiv);
 
-    fcavForm.on('submit', function () {
-        errorDiv.remove();
-        country.removeClass('fcavInvalid');
+    fcAddressForm.on('submit', function () {
+        oErrorDiv.remove();
+        oCountry.removeClass('fcInvalid');
     });
 }
 
-function fcGetErrorElement(msg) {
-    let errorDiv = $('<div></div>');
-    errorDiv.addClass('fcavErrorBox');
-    errorDiv.html(`<span>${msg}</span>`);
+/**
+ * Builds and returns error message as Jquery element
+ *
+ * @param sMsg {string}
+ * @returns {*|jQuery|HTMLElement}
+ */
+function fcGetErrorElement(sMsg) {
+    let errorDiv = $('<div class="fcErrorBox rounded"></div>');
+    errorDiv.html(`<span>${sMsg}</span>`);
 
     return errorDiv;
 }
 
-function fcValidateAddress(city, zip, countryId) {
+/**
+ * Validates address using ajax returns promise of response
+ *
+ * @param sCity {string}
+ * @param sZip {string}
+ * @param sCountryId {string}
+ * @returns {Promise<unknown>}
+ */
+function fcValidateAddress(sCity, sZip, sCountryId) {
     return new Promise(function(resolve) {
         $.ajax({
-            url: fcavBaseUrl,
+            url: fcBaseUrl,
             type: 'POST',
             data: {
                 'cl': 'fcAddressAjax',
-                'fnc': 'validateAddress',
-                'countryId': countryId,
-                'city': city,
-                'zip': zip
+                'fnc': 'fcValidateAddress',
+                'countryId': sCountryId,
+                'city': sCity,
+                'zip': sZip
             },
             success: function (response) {
                 resolve(JSON.parse(response));

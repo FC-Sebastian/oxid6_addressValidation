@@ -3,18 +3,27 @@
 namespace Fatchip\AddressValidation\Application\Model;
 
 use OxidEsales\Eshop\Core\DatabaseProvider;
+use OxidEsales\Eshop\Core\Exception\DatabaseConnectionException;
+use OxidEsales\Eshop\Core\Exception\DatabaseErrorException;
 use OxidEsales\Eshop\Core\Model\MultiLanguageModel;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\QueryBuilderFactoryInterface;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 class Address extends MultiLanguageModel
 {
-    protected static $_aRootBanner = [];
-
-    protected ?string $_sCsvInsertQuery = null;
+    /**
+     * Used to store INSERT query for csv import
+     *
+     * @var string|null
+     */
+    protected ?string $fc_sCsvInsertQuery = null;
 
     /**
-     * @var string Name of current class
+     * Name of current class
+     *
+     * @var string
      */
     protected $_sClassName = 'fcaddresses';
 
@@ -24,15 +33,13 @@ class Address extends MultiLanguageModel
         $this->init("fcaddresses");
     }
 
-    public function loadIdByAddress($sZip, $sCity, $sCountryShortcut)
-    {
-        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
-        $db->select("OXID FROM fcaddresses WHERE PLZ = '{$sZip}' AND CITY = '{$sCity}' AND COUNTRYSHORTCUT = '{$sCountryShortcut}' LIMIT 1");
-
-        return $db->execute()->fetchAssociative();
-    }
-
-    public function deleteBulk($aDeleteIds = [])
+    /**
+     * Deletes multiple Addresses using given array of Ids
+     *
+     * @param array $aDeleteIds
+     * @return void
+     */
+    public function fcDeleteBulk($aDeleteIds = [])
     {
         if (!empty($aDeleteIds)) {
             foreach ($aDeleteIds as $sDeleteId) {
@@ -41,44 +48,71 @@ class Address extends MultiLanguageModel
         }
     }
 
-    public function setInsertQueryValues($aCsvRow , $blEnd = false)
+    /**
+     * Appends Values from given csv row to csv INSERT query
+     *
+     * @param array $aCsvRow
+     * @return void
+     */
+    public function fcSetInsertQueryValues($aCsvRow)
     {
-        if ($this->_sCsvInsertQuery === null) {
-            $this->_sCsvInsertQuery = 'INSERT INTO fcaddresses (`OXID`, `PLZ`, `CITY`, `COUNTRY`, `COUNTRYSHORTCUT`) VALUES ';
+        if ($this->fc_sCsvInsertQuery === null) {
+            $this->fc_sCsvInsertQuery = 'INSERT INTO fcaddresses (`OXID`, `PLZ`, `CITY`, `COUNTRY`, `COUNTRYSHORTCUT`) VALUES ';
         }
 
-        $this->_sCsvInsertQuery .= "('{$aCsvRow['OXID']}', '{$aCsvRow['PLZ']}', '{$aCsvRow['CITY']}', '{$aCsvRow['COUNTRY']}', '{$aCsvRow['COUNTRYSHORTCUT']}')";
+        $this->fc_sCsvInsertQuery .= "('{$aCsvRow['OXID']}', '{$aCsvRow['PLZ']}', '{$aCsvRow['CITY']}', '{$aCsvRow['COUNTRY']}', '{$aCsvRow['COUNTRYSHORTCUT']}')";
     }
 
-    public function executeCsvInsertQuery()
+    /**
+     * Executes the csv INSERT query if it was set
+     *
+     * @return void
+     * @throws DatabaseConnectionException
+     * @throws DatabaseErrorException
+     */
+    public function fcExecuteCsvInsertQuery()
     {
-        if ($this->_sCsvInsertQuery !== null) {
-            DatabaseProvider::getDb()->execute(str_replace(')(', '),(', $this->_sCsvInsertQuery));
+        if ($this->fc_sCsvInsertQuery !== null) {
+            DatabaseProvider::getDb()->execute(str_replace(')(', '),(', $this->fc_sCsvInsertQuery));
         }
     }
 
-    public function getIds()
+    /**
+     * Loads all Ids from db and returns them as an array
+     *
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function fcGetIds()
     {
-        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
+        $oDb = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
 
         $aIds = [];
-        $data = $db->select("OXID")->from('fcaddresses')->execute();
+        $oData = $oDb->select("OXID")->from('fcaddresses')->execute();
 
-        while ($aRow = $data->fetchAssociative()) {
+        while ($aRow = $oData->fetchAssociative()) {
             $aIds[] = $aRow['OXID'];
         }
 
         return $aIds;
     }
 
-    public function getAddressCount()
+    /**
+     * Loads and returns total number of Addresses in db
+     *
+     * @return mixed
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function fcGetAddressCount()
     {
-        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
-        $db->select('COUNT(OXID) FROM fcaddresses');
-        return $db->execute()->fetchAssociative()['COUNT(OXID)'];
+        $oDb = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
+        $oDb->select('COUNT(OXID) FROM fcaddresses');
+        return $oDb->execute()->fetchAssociative()['COUNT(OXID)'];
     }
 
-    public function loadByColumnValues($aParams) {
+    public function fcLoadByColumnValues($aParams) {
         $sWhere = 'WHERE';
         foreach ($aParams as $sColumn => $sValue) {
             if ($sColumn !== array_key_first($aParams)) {
@@ -87,13 +121,13 @@ class Address extends MultiLanguageModel
             $sWhere .= " {$sColumn} = '{$sValue}'";
         }
 
-        $db = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
-        $db->select("* FROM fcaddresses {$sWhere} LIMIT 1");
+        $oDb = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
+        $oDb->select("* FROM fcaddresses {$sWhere} LIMIT 1");
 
-        $data = $db->execute();
+        $oData = $oDb->execute();
 
-        if ($data->rowCount() > 0) {
-            $this->assign($data->fetchAssociative());
+        if ($oData->rowCount() > 0) {
+            $this->assign($oData->fetchAssociative());
             return true;
         }
         return false;

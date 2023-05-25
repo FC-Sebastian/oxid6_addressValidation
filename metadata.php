@@ -15,8 +15,8 @@ $aModule = [
         'en' => 'Address validation'
     ],
     'description' => [
-        'de' => 'deutsch placeholder',
-        'en' => 'english placeholder'
+        'de' => 'Dieses Modul ermöglicht das importieren von Adressen in die Datenbank mithilfe einer CSV-Datei, um Nutzeradressen während des Check-Outs zu validieren.',
+        'en' => 'This module allows you to import addresses to the database using a CSV file, to validate user addresses during checkout.'
     ],
     'version'     => '1.0.0',
     'author'      => 'FC-Sebastian',
