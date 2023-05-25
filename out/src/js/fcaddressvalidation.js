@@ -2,20 +2,20 @@ let fcavForm;
 
 $(document).ready(function () {
     fcavForm = $(document.getElementById('fcBillingHidden').form);
-    fcavForm.on('submit', function(ev) {
-        if (fcAddressesAreValid() !== true) {
-            ev.preventDefault();
+    fcavForm.on('submit', async function(ev) {
+        ev.preventDefault();
+        if ( await fcAddressesAreValid() === true) {
+            fcavForm.unbind('submit').submit();
         }
     });
 });
 
-//versteckte forms müssen noch gezeigt werden
-function fcAddressesAreValid() {
-    let billingValid = fcAddressValidation('#invadr_oxuser__oxcity', '#invadr_oxuser__oxzip', '#invCountrySelect', );
+async function fcAddressesAreValid() {
+    let billingValid = await fcAddressValidation('#invadr_oxuser__oxcity', '#invadr_oxuser__oxzip', '#invCountrySelect');
     let shippingValid = billingValid;
 
-    if (fcIsShippingAddressVisible() === false) {
-        shippingValid = fcAddressValidation('#deladr_oxaddress__oxcity', '#deladr_oxaddress__oxcity', '#delCountrySelect', );
+    if (fcIsShippingAddressVisible() === true) {
+        shippingValid = await fcAddressValidation('#deladr_oxaddress__oxcity', '#deladr_oxaddress__oxzip', '#delCountrySelect');
     }
 
     return billingValid === true && shippingValid === true;
@@ -26,7 +26,7 @@ async function fcAddressValidation(citySelector, zipSelector, countrySelector) {
     let zip = $(zipSelector);
     let country = $(countrySelector);
 
-    let response = await fcValidateAddress(city.val(),zip.val(),country.val);
+    let response = await fcValidateAddress(city.val(),zip.val(),country.val());
 
     if (response.status === 'valid') {
         return true;
@@ -37,6 +37,15 @@ async function fcAddressValidation(citySelector, zipSelector, countrySelector) {
 }
 
 function fcShowErrorMessage(response, zip, city, country) {
+    let billingFrom = $('#addressForm');
+    let shippingForm =$('#shippingAddressForm');
+
+    if (billingFrom.has(zip).length !== 0) {
+        billingFrom.show();
+    } else if (shippingForm.has(zip).length !== 0) {
+        shippingForm.show();
+    }
+
     if (response.status === 'country found') {
         fcShowCountryError(country, response.country);
     } else if (response.status === 'city found') {
@@ -47,7 +56,7 @@ function fcShowErrorMessage(response, zip, city, country) {
 }
 
 function fcIsShippingAddressVisible() {
-    return $('#shippingAddress').css('diplay') !== 'none'
+    return $('#shippingAddress').css('display') !== 'none'
 }
 
 function fcShowCityError(zip,city, responseCity) {

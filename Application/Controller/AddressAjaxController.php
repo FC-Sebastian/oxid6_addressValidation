@@ -17,7 +17,8 @@ class AddressAjaxController extends FrontendController
         $sZip = Registry::getRequest()->getRequestParameter('zip');
 
         $oCountry = oxNew(Country::class);
-        $sCountryTitle = $oCountry->load($sCountryId)->oxcountry__oxtitle->value;
+        $oCountry->load($sCountryId);
+        $sCountryTitle = $oCountry->oxcountry__oxtitle->value;
 
         $oAddress = oxNew(Address::class);
         if ($oAddress->loadByColumnValues(['CITY' => $sCity, 'PLZ' => $sZip, 'COUNTRY' => $sCountryTitle]) === true) {
