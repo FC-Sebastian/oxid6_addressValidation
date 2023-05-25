@@ -7,7 +7,7 @@ use OxidEsales\Eshop\Core\Registry;
 
 class ModuleConfiguration extends ModuleConfiguration_Parent
 {
-    protected $_sSeparator = ",";
+    protected $_sSeparator = ";";
 
     protected $_sEnclosure = '"';
 
@@ -15,17 +15,16 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
 
     protected $_aDefaultHeaders = ["PLZ", "City", "Country", "Country-Shortcut"];
 
+    protected $_aDbColumns = null;
+
+    protected $_aAddressIds = null;
+
     protected $_blFileInvalid = false;
 
     protected $_blHeadersInvalid = false;
 
     protected $_blComplete = false;
 
-    //2:43
-
-    /**
-     * @throws \Exception
-     */
     public function save()
     {
         parent::save();
@@ -34,18 +33,22 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
             $aFormData = Registry::getRequest()->getRequestParameter("fc");
             $aFile = Registry::getConfig()->getUploadedFile("fc_csvFile");
 
+            $this->fcSetEnclosure($aFormData['csv_enclosure']);
+            $this->fcSetEscape($aFormData['csv_escape']);
+            $this->fcSetSeparator($aFormData['csv_separator']);
+
             if ($aFile["type"] === "text/csv") {
                 $file = fopen($aFile["tmp_name"],"r");
-                $afirstrow = fgetcsv($file,null, $aFormData["csv_separator"], $aFormData["csv_enclosure"], $aFormData["csv_escape"]);
 
-                if ($this->fcValidateHeaders($afirstrow) === true) {
-                    $aParamKeys = $this->fcGetParamKeys($afirstrow);
+                $aFirstRow = fgetcsv($file,null, $this->fcGetSeparator(), $this->fcGetEnclosure(), $this->fcGetEscape());
 
-                    $iStart = time();
-                    $this->fcSaveAndDelete($aParamKeys, $file, $aFormData);
-                    Registry::getLogger()->error('total time: '.date('i:s', time() - $iStart));
+                if ($this->fcValidateHeaders($aFirstRow) === true) {
+                    $this->_aDbColumns = $this->fcGetParamKeys($aFirstRow);
+
+                    $this->fcSaveAndDelete($file);
 
                     fclose($file);
+                    unlink($aFile["tmp_name"]);
                 } else {
                     $this->_blHeadersInvalid = true;
                 }
@@ -55,65 +58,48 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
         }
     }
 
+    protected function  fcGetAssocCsvRow($file)
+    {
+
+        while ($aRow = fgetcsv($file,null, $this->fcGetSeparator(), $this->fcGetEnclosure(), $this->fcGetEscape())) {
+            foreach ($aRow as $key => $value) {
+                $aRow[$this->_aDbColumns[$key]] = utf8_encode($value);
+                unset($aRow[$key]);
+            }
+            $aRow['OXID'] = md5($aRow['PLZ'].$aRow['CITY'].$aRow['COUNTRYSHORTCUT']);
+
+            yield $aRow;
+        }
+    }
+
     protected function fcGetParamKeys($aFirstRow)
     {
         $aReturn = [];
         foreach ($aFirstRow as $column) {
-            $aReturn[] = "fcaddresses__".str_replace("-","",strtolower($column));
+            $aReturn[] = str_replace("-","",strtoupper($column));
         }
         return $aReturn;
     }
 
-    protected function fcSaveAndDelete($aParamKeys, $file, $aFormData)
+    protected function fcSaveAndDelete($file)
     {
         $oAddress = oxNew(Address::class);
-        $aDeleteIds = $oAddress->getIds();
-        $aSaveParams = [];
+        $aAddressIds = $oAddress->getIds();
 
-        while($aRow = fgetcsv($file,null, $aFormData["csv_separator"], $aFormData["csv_enclosure"], $aFormData["csv_escape"])) {
-            $aParams = $this->fcGetParams($aParamKeys, $aRow);
-            $aAddressId = $oAddress->loadIdByParams($aParams);
+        foreach($this->fcGetAssocCsvRow($file) as $aRow) {
+            $sAddressIdKey = array_search($aRow['OXID'], $aAddressIds);
 
-            if (empty($aAddressId)) {
-                $aSaveParams[] = $aParams;
+            if ($sAddressIdKey === false) {
+                $oAddress->setInsertQueryValues($aRow);
             } else {
-                unset($aDeleteIds[array_search($aAddressId['OXID'],$aDeleteIds)]);
+                unset($aAddressIds[$sAddressIdKey]);
             }
         }
-        $this->fcDeleteAddresses($aDeleteIds);
-        $this->fcSaveAddresses($aSaveParams);
+
+        $oAddress->executeCsvInsertQuery();
+        $oAddress->deleteBulk($aAddressIds);
 
         $this->_blComplete = true;
-    }
-
-    protected function fcDeleteAddresses($aDeleteIds)
-    {
-        if (!empty($aDeleteIds)) {
-            $oAddress = oxNew(Address::class);
-            foreach ($aDeleteIds as $deleteId) {
-                $oAddress->delete($deleteId);
-            }
-        }
-    }
-
-    protected function fcSaveAddresses($aSaveParams)
-    {
-        if (!empty($aSaveParams)) {
-            foreach ($aSaveParams as $aParams) {
-                $oAddress = oxNew(Address::class);
-                $oAddress->assign($aParams);
-                $oAddress->save();
-            }
-        }
-    }
-
-    protected function fcGetParams($aHeaders, $aRow)
-    {
-        $aParams = [];
-        for($i = 0; $i < count($aHeaders); $i++) {
-            $aParams[$aHeaders[$i]] = utf8_encode($aRow[$i]);
-        }
-        return $aParams;
     }
 
     protected function fcValidateHeaders($aHeaders)
@@ -140,6 +126,21 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
     public function fcGetEscape()
     {
         return $this->_sEscape;
+    }
+
+    public function fcSetSeparator($separator)
+    {
+        $this->_sSeparator = $separator;
+    }
+
+    public function fcSetEnclosure($enclosure)
+    {
+        $this->_sEnclosure = $enclosure;
+    }
+
+    public function fcSetEscape($escape)
+    {
+        $this->_sEscape = $escape;
     }
 
     public function fcGetTypeInvalid()
