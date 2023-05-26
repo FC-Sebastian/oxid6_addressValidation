@@ -23,7 +23,7 @@ class AddressAjaxController extends FrontendController
         $sZip = Registry::getRequest()->getRequestParameter('zip');
 
         $oCountry = oxNew(Country::class);
-        $oCountry->load($sCountryId);
+        $oCountry->loadInLang(0, $sCountryId);
         $sCountryTitle = $oCountry->oxcountry__oxtitle->value;
 
         $oAddress = oxNew(Address::class);
