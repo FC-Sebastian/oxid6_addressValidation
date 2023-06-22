@@ -15,4 +15,4 @@
     [{/if}]
 </script>
 [{oxscript include=$oViewConf->getModuleUrl('fcaddressvalidation', 'out/src/js/fcMap.js')}]
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDm_dVkwNA4tJF96p98q-iz6h7v7xxHx3A&libraries=places&callback=fcInitMap" defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=APIKEYHERE&libraries=places&callback=fcInitMap" defer></script>
