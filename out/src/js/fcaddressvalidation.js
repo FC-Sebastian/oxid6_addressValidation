@@ -18,13 +18,18 @@ $(document).ready(function () {
  */
 async function fcAddressesAreValid() {
     let blBillingValid = await fcAddressValidation('#invadr_oxuser__oxcity', '#invadr_oxuser__oxzip', '#invCountrySelect');
-    let blShippingValid = blBillingValid;
-
-    if (fcIsShippingAddressVisible() === true) {
-        blShippingValid = await fcAddressValidation('#deladr_oxaddress__oxcity', '#deladr_oxaddress__oxzip', '#delCountrySelect');
+    if (blBillingValid === false) {
+        return false
     }
 
-    return blBillingValid === true && blShippingValid === true;
+    if (fcIsShippingAddressVisible() === true) {
+        let blShippingValid = await fcAddressValidation('#deladr_oxaddress__oxcity', '#deladr_oxaddress__oxzip', '#delCountrySelect');
+        if (blShippingValid === false) {
+            return false
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -111,6 +116,7 @@ function fcShowCityError(oZip, oCity, sResponseCity) {
     oZip.addClass('fcInvalid');
     oCity.addClass('fcInvalid');
     oCity.parent().after(oErrorContainer);
+    oCity[0].scrollIntoView({behavior:'auto', block:'center', inline:'center'});
 
     fcAddressForm.on('submit', function () {
         oErrorDiv.remove();
@@ -140,6 +146,7 @@ function fcShowCountryError(oCountry, sCountryId) {
     let oErrorDiv = fcGetErrorElement(sMsg);
     oCountry.addClass('fcInvalid');
     oCountry.after(oErrorDiv);
+    oCountry[0].scrollIntoView({behavior:'auto', block:'center', inline:'center'});
 
     fcAddressForm.on('submit', function () {
         oErrorDiv.remove();
@@ -151,10 +158,10 @@ function fcShowCountryError(oCountry, sCountryId) {
  * Builds and returns error message as Jquery element
  *
  * @param sMsg {string}
- * @returns {*|jQuery|HTMLElement}
+ * @returns {jQuery|HTMLElement}
  */
 function fcGetErrorElement(sMsg) {
-    let errorDiv = $('<div class="fcErrorBox rounded"></div>');
+    let errorDiv = $('<div class="alert alert-danger"></div>');
     errorDiv.html(`<span>${sMsg}</span>`);
 
     return errorDiv;
