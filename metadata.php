@@ -33,6 +33,11 @@ $aModule = [
             'template' => 'form/fieldset/user_billing.tpl',
             'block'    => 'form_user_billing_country',
             'file'     => 'form_user_billing_country.tpl'
+        ],
+        [
+            'template' => 'page/checkout/order.tpl',
+            'block'    => 'checkout_order_address_inner',
+            'file'     => 'checkout_order_address_inner.tpl'
         ]
     ],
     'events'      => [

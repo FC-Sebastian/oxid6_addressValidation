@@ -37,7 +37,7 @@ class AddressAjaxController extends FrontendController
             echo json_encode(['status' => 'invalid']);
         }
 
-        exit();
+        $this->fcKillPHP();
     }
 
     /**
@@ -50,5 +50,10 @@ class AddressAjaxController extends FrontendController
     {
         $oCountry = oxNew(Country::class);
         return $oCountry->getIdByCode($sCountryShortcut);
+    }
+
+    protected function fcKillPHP()
+    {
+        exit();
     }
 }
