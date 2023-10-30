@@ -22,11 +22,6 @@ class AddressAjaxController extends FrontendController
         $sCity = Registry::getRequest()->getRequestParameter('city');
         $sZip = Registry::getRequest()->getRequestParameter('zip');
 
-        echo 'poop'.json_encode($_REQUEST).'poop
-';
-        echo 'poop'.json_encode(['CITY' => $sCity, 'PLZ' => $sZip, 'COUNTRY' => $sCountryId]).'poop
-';
-
         $oCountry = oxNew(Country::class);
         $oCountry->loadInLang(0, $sCountryId);
         $sCountryTitle = $oCountry->oxcountry__oxtitle->value;

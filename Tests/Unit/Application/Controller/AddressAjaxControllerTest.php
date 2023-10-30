@@ -32,15 +32,10 @@ class AddressAjaxControllerTest extends \OxidEsales\TestingLibrary\UnitTestCase
      */
     public function testFcValidateAddress($sCountryId, $sCity, $sZip, $sExpected)
     {
-        $_REQUEST['countryId'] = $sCountryId;
-        $_REQUEST['city'] = $sCity;
-        $_REQUEST['zip'] = $sZip;
+        $_POST['countryId'] = $sCountryId;
+        $_POST['city'] = $sCity;
+        $_POST['zip'] = $sZip;
         $this->expectOutputString($sExpected);
-
-        echo json_encode($_REQUEST).'
-';
-        echo json_encode($this->getDb(2)->select('Select * from fcaddresses')).'
-';
 
         $oAddressAjaxController = $this->getMockBuilder(AddressAjaxController::class)
             ->onlyMethods(['fcKillPHP'])
