@@ -24,6 +24,8 @@ class AddressAjaxController extends FrontendController
 
         echo 'poop'.json_encode($_REQUEST).'poop
 ';
+        echo 'poop'.json_encode(['CITY' => $sCity, 'PLZ' => $sZip, 'COUNTRY' => $sCountryId]).'poop
+';
 
         $oCountry = oxNew(Country::class);
         $oCountry->loadInLang(0, $sCountryId);
