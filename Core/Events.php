@@ -44,7 +44,7 @@ class Events
      * @throws DatabaseConnectionException
      * @throws DatabaseErrorException
      */
-    protected static function alterDbTables()
+    public static function alterDbTables()
     {
         self::addTableIfNotExists();
         self::addColumnIfNotExists( 'PLZ', "VARCHAR(50) COLLATE 'utf8_general_ci'");

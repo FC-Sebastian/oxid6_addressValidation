@@ -22,6 +22,8 @@ class AddressAjaxController extends FrontendController
         $sCity = Registry::getRequest()->getRequestParameter('city');
         $sZip = Registry::getRequest()->getRequestParameter('zip');
 
+        exit(json_encode($_REQUEST));
+
         $oCountry = oxNew(Country::class);
         $oCountry->loadInLang(0, $sCountryId);
         $sCountryTitle = $oCountry->oxcountry__oxtitle->value;

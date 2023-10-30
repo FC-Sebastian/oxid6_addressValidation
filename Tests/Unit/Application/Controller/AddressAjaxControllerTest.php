@@ -9,8 +9,7 @@ class AddressAjaxControllerTest extends \OxidEsales\TestingLibrary\UnitTestCase
     public function setUp(): void
     {
         parent::setUp();
-        \Fatchip\AddressValidation\Core\Events::onActivate();
-        $oDb = $this->getDb(2);
+        \Fatchip\AddressValidation\Core\Events::alterDbTables();
         $sOxid1 = md5('12109BerlinDE');
         $sOxid2 = md5('13353BerlinDE');
         $oAddress = new \Fatchip\AddressValidation\Application\Model\Address();
@@ -36,7 +35,6 @@ class AddressAjaxControllerTest extends \OxidEsales\TestingLibrary\UnitTestCase
         $_REQUEST['countryId'] = $sCountryId;
         $_REQUEST['city'] = $sCity;
         $_REQUEST['zip'] = $sZip;
-
         $this->expectOutputString($sExpected);
 
         $oAddressAjaxController = $this->getMockBuilder(AddressAjaxController::class)
