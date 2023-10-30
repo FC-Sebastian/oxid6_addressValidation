@@ -37,6 +37,11 @@ class AddressAjaxControllerTest extends \OxidEsales\TestingLibrary\UnitTestCase
         $_REQUEST['zip'] = $sZip;
         $this->expectOutputString($sExpected);
 
+        echo json_encode($_REQUEST).'
+';
+        echo json_encode($this->getDb(2)->select('Select * from fcaddresses')).'
+';
+
         $oAddressAjaxController = $this->getMockBuilder(AddressAjaxController::class)
             ->onlyMethods(['fcKillPHP'])
             ->getMock();

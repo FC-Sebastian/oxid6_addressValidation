@@ -120,7 +120,7 @@ class Address extends MultiLanguageModel
             }
             $sWhere .= " {$sColumn} = '{$sValue}'";
         }
-
+        echo $sWhere;
         $oDb = ContainerFactory::getInstance()->getContainer()->get(QueryBuilderFactoryInterface::class)->create();
         $oDb->select("* FROM fcaddresses {$sWhere} LIMIT 1");
 
