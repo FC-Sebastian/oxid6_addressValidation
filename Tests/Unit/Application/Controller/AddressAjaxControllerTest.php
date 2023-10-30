@@ -49,10 +49,10 @@ class AddressAjaxControllerTest extends \OxidEsales\TestingLibrary\UnitTestCase
         $oCountry = new \OxidEsales\Eshop\Application\Model\Country();
 
         return [
-            ['DE', 'Berlin', '12109', json_encode(['status' => 'valid'])],
-            ['ED', 'Berlin', '12109', json_encode(['status' => 'country found', 'country' => $oCountry->getIdByCode('DE')])],
-            ['DE', 'Blin', '13353', json_encode(['status' => 'city found', 'city' => 'Berlin'])],
-            ['DE', 'Dresden', '01001', json_encode(['status' => 'invalid'])]
+            [$oCountry->getIdByCode('DE'), 'Berlin', '12109', json_encode(['status' => 'valid'])],
+            [$oCountry->getIdByCode('DK'), 'Berlin', '12109', json_encode(['status' => 'country found', 'country' => $oCountry->getIdByCode('DE')])],
+            [$oCountry->getIdByCode('DE'), 'Blin', '13353', json_encode(['status' => 'city found', 'city' => 'Berlin'])],
+            [$oCountry->getIdByCode('DE'), 'Dresden', '01001', json_encode(['status' => 'invalid'])]
         ];
     }
 }
