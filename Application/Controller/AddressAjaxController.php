@@ -52,6 +52,11 @@ class AddressAjaxController extends FrontendController
         return $oCountry->getIdByCode($sCountryShortcut);
     }
 
+    /**
+     * calls exit()
+     *
+     * @return void
+     */
     protected function fcKillPHP()
     {
         exit();
