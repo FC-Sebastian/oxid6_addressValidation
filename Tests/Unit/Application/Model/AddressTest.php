@@ -66,10 +66,10 @@ class AddressTest extends \OxidEsales\TestingLibrary\UnitTestCase
     public function testFcExecuteCsvInsertQuery($oAddress)
     {
         $oDb = $this->getDb();
-        $this->assertEmpty( $oDb->getOne('SELECT COUNT(OXID) FROM fcadresses'));
+        $this->assertEmpty( $oDb->getOne('SELECT COUNT(OXID) FROM fcaddresses'));
 
         $oAddress->fcExecuteCsvInsertQuery();
-        $this->assertEquals('1',  $oDb->getOne('SELECT COUNT(OXID) FROM fcadresses'));
+        $this->assertEquals('1',  $oDb->getOne('SELECT COUNT(OXID) FROM fcaddresses'));
     }
 
     public function testFcGetIds()

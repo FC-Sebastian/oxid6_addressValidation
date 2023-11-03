@@ -157,7 +157,7 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
      */
     protected function fcSaveAndDelete($oCsvFile)
     {
-        $oAddress = oxNew(Address::class);
+        $oAddress = $this->fcGetAddress();
         $aAddressIds = $oAddress->fcGetIds();
 
         foreach($this->fcGetAssocCsvRow($oCsvFile) as $aRow) {
@@ -196,7 +196,7 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
      */
     public function fcGetAddressCount()
     {
-        $oAddress = oxNew(Address::class);
+        $oAddress = $this->fcGetAddress();
         return $oAddress->fcGetAddressCount();
     }
 
@@ -292,5 +292,10 @@ class ModuleConfiguration extends ModuleConfiguration_Parent
     public function fcGetComplete()
     {
         return $this->fc_blComplete;
+    }
+
+    public function fcGetAddress()
+    {
+        return oxNew(Address::class);
     }
 }

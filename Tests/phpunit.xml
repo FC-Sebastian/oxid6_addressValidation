@@ -1,20 +1,9 @@
-<phpunit backupGlobals="true"
-         backupStaticAttributes="false"
-         cacheTokens="true"
-         colors="false"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
-         forceCoversAnnotation="false"
-         processIsolation="false"
-         stopOnError="false"
-         stopOnFailure="false"
-         stopOnIncomplete="false"
-         stopOnSkipped="false"
-         verbose="false">
+<phpunit>
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">../Application/Model</directory>
             <directory suffix=".php">../Application/Controller</directory>
+            <directory suffix=".php">../extend/Application/Controller/Admin</directory>
         </whitelist>
     </filter>
 </phpunit>
